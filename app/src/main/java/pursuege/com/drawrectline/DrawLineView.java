@@ -138,6 +138,31 @@ public class DrawLineView extends View {
         float leftY = getLeftScreenFocusY(listPoint.get(0)[0], listPoint.get(0)[1], listPoint.get(2)[0], listPoint.get(2)[1]);
         float rightY = getRightScreenFocusY(listPoint.get(0)[0], listPoint.get(0)[1], listPoint.get(2)[0], listPoint.get(2)[1]);
         canvas.drawLine(0, leftY, viewWidth, rightY, paint);
+        float[] pointD = new float[2];
+        pointD[0] = listPoint.get(1)[0] + listPoint.get(2)[0] - listPoint.get(0)[0];
+        pointD[1] = listPoint.get(1)[1] + listPoint.get(2)[1] - listPoint.get(0)[1];
+        float A2y = getLeftScreenFocusY(listPoint.get(1)[0], listPoint.get(1)[1], pointD[0], pointD[1]);
+        float right = getRightScreenFocusY(0, A2y, listPoint.get(1)[0], listPoint.get(1)[1]);
+        paint.setColor(Color.GREEN);
+        canvas.drawLine(0, A2y, viewWidth, right, paint);
+        float space = Math.abs(A2y - leftY);
+        for (int i = 1; i < 700; i++) {
+            canvas.drawLine(0, A2y + space * i, viewWidth, right + space * i, paint);
+            canvas.drawLine(0, A2y - space * i, viewWidth, right - space * i, paint);
+        }
+        //gener
+        float topY = getTopScreenFocusY(listPoint.get(0)[0], listPoint.get(0)[1], listPoint.get(1)[0], listPoint.get(1)[1]);
+        float bottomY = getBottomScreenFocusY(listPoint.get(0)[0], listPoint.get(0)[1], listPoint.get(1)[0], listPoint.get(1)[1]);
+        paint.setColor(Color.BLUE);
+        canvas.drawLine(topY, 0, bottomY, viewHeight, paint);
+        //22222222
+        float top = getTopScreenFocusY(listPoint.get(2)[0], listPoint.get(2)[1], pointD[0], pointD[1]);
+        float spaceX=Math.abs(top- topY);
+        for (int i=1;i<700;i++){
+            canvas.drawLine(topY+spaceX*i, 0, bottomY+spaceX*i, viewHeight, paint);
+            canvas.drawLine(topY-spaceX*i, 0, bottomY-spaceX*i, viewHeight, paint);
+        }
+
     }
 
     /**
@@ -207,6 +232,31 @@ public class DrawLineView extends View {
                 * (y3 - y4))
                 / ((y1 - y2) * (x3 - x4) - (x1 - x2) * (y3 - y4));
         return resoult[1];
+
+    }
+
+    private float getTopScreenFocusY(float x1, float y1, float x2, float y2) {
+        float x3 = 0, y3 = 0, x4 = viewWidth, y4 = 0;
+        float[] resoult = new float[2];
+        resoult[0] = ((x1 - x2) * (x3 * y4 - x4 * y3) - (x3 - x4)
+                * (x1 * y2 - x2 * y1))
+                / ((x3 - x4) * (y1 - y2) - (x1 - x2) * (y3 - y4));
+        resoult[1] = ((y1 - y2) * (x3 * y4 - x4 * y3) - (x1 * y2 - x2 * y1)
+                * (y3 - y4))
+                / ((y1 - y2) * (x3 - x4) - (x1 - x2) * (y3 - y4));
+        return resoult[0];
+
+    }
+    private float getBottomScreenFocusY(float x1, float y1, float x2, float y2) {
+        float x3 = 0, y3 = viewHeight, x4 = viewWidth, y4 = viewHeight;
+        float[] resoult = new float[2];
+        resoult[0] = ((x1 - x2) * (x3 * y4 - x4 * y3) - (x3 - x4)
+                * (x1 * y2 - x2 * y1))
+                / ((x3 - x4) * (y1 - y2) - (x1 - x2) * (y3 - y4));
+        resoult[1] = ((y1 - y2) * (x3 * y4 - x4 * y3) - (x1 * y2 - x2 * y1)
+                * (y3 - y4))
+                / ((y1 - y2) * (x3 - x4) - (x1 - x2) * (y3 - y4));
+        return resoult[0];
 
     }
 
