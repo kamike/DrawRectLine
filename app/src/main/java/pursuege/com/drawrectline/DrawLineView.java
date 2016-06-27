@@ -7,12 +7,15 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.graphics.RectF;
+import android.graphics.Region;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 
 /**
@@ -49,6 +52,7 @@ public class DrawLineView extends View {
         paint.setDither(true);
         paint.setAntiAlias(true);
         paint.setStyle(Paint.Style.STROKE);
+
     }
 
     @Override
@@ -142,6 +146,8 @@ public class DrawLineView extends View {
         if (listPoint.size() < 3) {
             return;
         }
+        allXFocusPoint = new ArrayList<>();
+        allYFocusPoint = new ArrayList<>();
         float leftY = getLeftScreenFocusY(listPoint.get(0)[0], listPoint.get(0)[1], listPoint.get(2)[0], listPoint.get(2)[1]);
         float rightY = getRightScreenFocusY(listPoint.get(0)[0], listPoint.get(0)[1], listPoint.get(2)[0], listPoint.get(2)[1]);
         canvas.drawLine(0, leftY, viewWidth, rightY, paint);
@@ -150,32 +156,53 @@ public class DrawLineView extends View {
         float A2y = getLeftScreenFocusY(listPoint.get(1)[0], listPoint.get(1)[1], pointD[0], pointD[1]);
         float right = getRightScreenFocusY(0, A2y, listPoint.get(1)[0], listPoint.get(1)[1]);
         paint.setColor(colorY);
-        canvas.drawLine(0, A2y, viewWidth, right, paint);
+
+        Line lineX = new Line(0, A2y, viewWidth, right);
+        canvas.drawLine(lineX.startX, lineX.startY, lineX.endX, lineX.endY, paint);
+        allXFocusPoint.add(lineX);
+
         currentSpaceY = Math.abs(A2y - leftY);
         for (int i = 1; i < 100; i++) {
-            canvas.drawLine(0, A2y + currentSpaceY * i, viewWidth, right + currentSpaceY * i, paint);
-            canvas.drawLine(0, A2y - currentSpaceY * i, viewWidth, right - currentSpaceY * i, paint);
+            Line line1 = new Line(0, A2y + currentSpaceY * i, viewWidth, right + currentSpaceY * i);
+            Line line2 = new Line(0, A2y - currentSpaceY * i, viewWidth, right - currentSpaceY * i);
+            canvas.drawLine(line1.startX, line1.startY, line1.endX, line1.endY, paint);
+            canvas.drawLine(line2.startX, line2.startY, line2.endX, line2.endY, paint);
+            allXFocusPoint.add(line1);
+            allXFocusPoint.add(line2);
         }
         //gener
         float topY = getTopScreenFocusY(listPoint.get(0)[0], listPoint.get(0)[1], listPoint.get(1)[0], listPoint.get(1)[1]);
         float bottomY = getBottomScreenFocusY(listPoint.get(0)[0], listPoint.get(0)[1], listPoint.get(1)[0], listPoint.get(1)[1]);
         paint.setColor(colorX);
-        canvas.drawLine(topY, 0, bottomY, viewHeight, paint);
+        Line lineY = new Line(topY, 0, bottomY, viewHeight);
+        canvas.drawLine(lineY.startX, lineY.startY, lineY.endX, lineY.endY, paint);
+        allYFocusPoint.add(lineY);
         //22222222
         float top = getTopScreenFocusY(listPoint.get(2)[0], listPoint.get(2)[1], pointD[0], pointD[1]);
         currentSpaceX = Math.abs(top - topY);
         for (int i = 1; i < 100; i++) {
-            canvas.drawLine(topY + currentSpaceX * i, 0, bottomY + currentSpaceX * i, viewHeight, paint);
-            canvas.drawLine(topY - currentSpaceX * i, 0, bottomY - currentSpaceX * i, viewHeight, paint);
+            Line line1 = new Line(topY + currentSpaceX * i, 0, bottomY + currentSpaceX * i, viewHeight);
+            Line line2 = new Line(topY - currentSpaceX * i, 0, bottomY - currentSpaceX * i, viewHeight);
+            canvas.drawLine(line1.startX, line1.startY, line1.endX, line1.endY, paint);
+            canvas.drawLine(line2.startX, line2.startY, line2.endX, line2.endY, paint);
+            allYFocusPoint.add(line1);
+            allYFocusPoint.add(line2);
         }
         //genera
         if (!isFileRect) {
             return;
         }
         paint.setColor(Color.RED);
-        getClickPostionRect(canvas, moveX, moveY, leftY, rightY);
+//        getClickPostionRect(canvas, moveX, moveY, leftY, rightY);
+        getClickPostionRect(canvas, moveX, moveY);
+
 
     }
+
+    /**
+     * 所有的线
+     */
+    private ArrayList<Line> allXFocusPoint, allYFocusPoint;
 
     float[] pointD = new float[2];
 
@@ -187,6 +214,7 @@ public class DrawLineView extends View {
         } else {
             isFileRect = true;
         }
+        invalidate();
 
     }
 
@@ -225,9 +253,9 @@ public class DrawLineView extends View {
     /**
      * 得到两条直线焦点
      */
-    private float[] getLineFocus(float x1, float y1, float x2, float y2, float x3,
+    private Float[] getLineFocus(float x1, float y1, float x2, float y2, float x3,
                                  float y3, float x4, float y4) {
-        float[] resoult = new float[2];
+        Float[] resoult = new Float[2];
         resoult[0] = ((x1 - x2) * (x3 * y4 - x4 * y3) - (x3 - x4)
                 * (x1 * y2 - x2 * y1))
                 / ((x3 - x4) * (y1 - y2) - (x1 - x2) * (y3 - y4));
@@ -369,5 +397,71 @@ public class DrawLineView extends View {
         System.out.println("numberX:" + numberX + ",numberY:" + numberY);
     }
 
+    private void getClickPostionRect(Canvas canvas, final float x, final float y) {
+        int size = allXFocusPoint.size();
+        ArrayList<Float[]> allPoint = new ArrayList<>();
+        paint.setColor(Color.RED);
+        paint.setStyle(Paint.Style.FILL);
+        paint.setStrokeWidth(10);
+        for (int i = 0; i < size; i++) {
+            Line lineX = allXFocusPoint.get(i);
+            for (int j = 0; j < size; j++) {
+                Line lineY = allYFocusPoint.get(j);
+                Float[] point = getLineFocus(lineX.startX, lineX.startY, lineX.endX, lineX.endY,
+                        lineY.startX, lineY.startY, lineY.endX, lineY.endY);
+                if (point[0] >= 0 && point[0] <= viewWidth && point[1] >= 0 && point[1] <= viewHeight) {
+                    allPoint.add(point);
+                }
+            }
+        }
+
+        Collections.sort(allPoint, new Comparator<Float[]>() {
+            @Override
+            public int compare(Float[] xy1, Float[] xy2) {
+                if (getDistance(xy1, x, y) >= getDistance(xy2, x, y)) {
+                    return 1;
+                }
+                return -1;
+            }
+        });
+        //找出最小两个点
+        float[] tarPoint = new float[4];
+        tarPoint[0] = allPoint.get(0)[0];
+        tarPoint[1] = allPoint.get(0)[1];
+        tarPoint[2] = allPoint.get(1)[0];
+        tarPoint[3] = allPoint.get(1)[1];
+        canvas.drawPoint(tarPoint[0], tarPoint[1], paint);
+        canvas.drawPoint(tarPoint[2], tarPoint[3], paint);
+        paint.setColor(Color.BLUE);
+        canvas.drawPoint(x, y, paint);
+
+        //
+        Path path=new Path();
+
+        RectF rectF = new RectF();
+        path.computeBounds(rectF, true);
+        Region region = new Region();
+
+        if (region.contains(0, 0)) {
+
+        }
+    }
+
+    private int indexFloatPoint(ArrayList<Float[]> tempPoint, Float[] f) {
+        for (int i = 0; i < tempPoint.size(); i++) {
+            if (tempPoint.get(i)[0] == f[0] && tempPoint.get(i)[1] == f[1]) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+
+    private float getDistance(Float[] xy, float x, float y) {
+        return (float) Math.sqrt(Math.pow(xy[0] - x, 2) + Math.pow(xy[1] - y, 2));
+    }
+
+
 
 }
+
