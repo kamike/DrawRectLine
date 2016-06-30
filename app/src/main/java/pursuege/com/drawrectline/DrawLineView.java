@@ -350,47 +350,6 @@ public class DrawLineView extends View {
     }
 
 
-    /**
-     * 根据xy，计算所在矩形
-     */
-    private void getClickPostionRect(Canvas canvas, float x, float y, float leftY, float rightY) {
-        paint.setStyle(Paint.Style.FILL);
-        paint.setStrokeWidth(20);
-
-        double angleY = getRawAngle(listPoint.get(0)[0], listPoint.get(0)[1], listPoint.get(2)[0], listPoint.get(2)[1]);
-        float endx = (float) (x + 50 * Math.cos(angleY));
-        float endY = (float) (y + 50 * Math.sin(angleY));
-
-        int numberY = (int) ((getLeftScreenFocusY(x, y, endx, endY) - leftY) / currentSpaceY);
-        float rectTopLeftY = listPoint.get(0)[1] + currentSpaceY * numberY;
-        float rectBottomLeftY = listPoint.get(1)[1] + currentSpaceY * numberY;
-        float rectTopRightY = listPoint.get(2)[1] + currentSpaceY * numberY;
-        float rectBottomRightY = pointD[1] + currentSpaceY * numberY;
-        //
-        double angleX = getRawAngle(listPoint.get(0)[0], listPoint.get(0)[1], listPoint.get(1)[0], listPoint.get(1)[1]);
-        float otherX = (float) (x + 50 * Math.cos(angleX));
-        float otherY = (float) (y + 50 * Math.sin(angleX));
-        int numberX = (int) ((getTopScreenFocusY(x, y, otherX, otherY) - rightY) / currentSpaceX);
-        float rectTopLeftX = listPoint.get(0)[0] + currentSpaceX * numberX;
-        float rectBottomLeftX = listPoint.get(1)[0] + currentSpaceX * numberX;
-        float rectTopRightX = listPoint.get(2)[0] + currentSpaceX * numberX;
-        float rectBottomRightX = pointD[0] + currentSpaceX * numberX;
-        //draw rect
-        Path path = new Path();
-        path.moveTo(rectTopLeftX, rectTopLeftY);
-        path.lineTo(rectTopRightX, rectTopRightY);
-        path.lineTo(rectBottomRightX, rectBottomRightY);
-        path.lineTo(rectBottomLeftX, rectBottomLeftY);
-        path.close();
-//        canvas.drawPath(path, paint);
-        paint.setColor(Color.YELLOW);
-        canvas.drawPoint(x, y, paint);
-        paint.setColor(Color.RED);
-        canvas.drawPoint(listPoint.get(0)[0] + currentSpaceX, listPoint.get(0)[1] + currentSpaceY, paint);
-        canvas.drawPoint(listPoint.get(1)[0] + currentSpaceX, listPoint.get(1)[1] + currentSpaceY, paint);
-        canvas.drawPoint(listPoint.get(2)[0] + currentSpaceX, listPoint.get(2)[1] + currentSpaceY, paint);
-        System.out.println("numberX:" + numberX + ",numberY:" + numberY);
-    }
 
     private void getClickPostionRect(Canvas canvas, final float x, final float y) {
         int size = allXFocusPoint.size();
