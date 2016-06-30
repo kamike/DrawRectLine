@@ -7,9 +7,8 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
-import android.graphics.RectF;
-import android.graphics.Region;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 
@@ -156,11 +155,9 @@ public class DrawLineView extends View {
         float A2y = getLeftScreenFocusY(listPoint.get(1)[0], listPoint.get(1)[1], pointD[0], pointD[1]);
         float right = getRightScreenFocusY(0, A2y, listPoint.get(1)[0], listPoint.get(1)[1]);
         paint.setColor(colorY);
-
         Line lineX = new Line(0, A2y, viewWidth, right);
         canvas.drawLine(lineX.startX, lineX.startY, lineX.endX, lineX.endY, paint);
         allXFocusPoint.add(lineX);
-
         currentSpaceY = Math.abs(A2y - leftY);
         for (int i = 1; i < 100; i++) {
             Line line1 = new Line(0, A2y + currentSpaceY * i, viewWidth, right + currentSpaceY * i);
@@ -195,8 +192,6 @@ public class DrawLineView extends View {
         paint.setColor(Color.RED);
 //        getClickPostionRect(canvas, moveX, moveY, leftY, rightY);
         getClickPostionRect(canvas, moveX, moveY);
-
-
     }
 
     /**
@@ -403,6 +398,7 @@ public class DrawLineView extends View {
         paint.setColor(Color.RED);
         paint.setStyle(Paint.Style.FILL);
         paint.setStrokeWidth(10);
+        int[] colArray = new int[size];
         for (int i = 0; i < size; i++) {
             Line lineX = allXFocusPoint.get(i);
             for (int j = 0; j < size; j++) {
@@ -410,6 +406,7 @@ public class DrawLineView extends View {
                 Float[] point = getLineFocus(lineX.startX, lineX.startY, lineX.endX, lineX.endY,
                         lineY.startX, lineY.startY, lineY.endX, lineY.endY);
                 if (point[0] >= 0 && point[0] <= viewWidth && point[1] >= 0 && point[1] <= viewHeight) {
+                    colArray[i]++;
                     allPoint.add(point);
                 }
             }
@@ -424,27 +421,46 @@ public class DrawLineView extends View {
                 return -1;
             }
         });
-        //找出最小两个点
-        float[] tarPoint = new float[4];
-        tarPoint[0] = allPoint.get(0)[0];
-        tarPoint[1] = allPoint.get(0)[1];
-        tarPoint[2] = allPoint.get(1)[0];
-        tarPoint[3] = allPoint.get(1)[1];
-        canvas.drawPoint(tarPoint[0], tarPoint[1], paint);
-        canvas.drawPoint(tarPoint[2], tarPoint[3], paint);
+        if (allPoint.isEmpty()) {
+            Log.i("log_test", "拷贝为空");
+            return;
+        }
+        float[] tarPoint = getTarPoint(allPoint.get(0)[0],allPoint.get(0)[1]);
+
+        Path path = new Path();
+        path.moveTo(tarPoint[0], tarPoint[1]);
+        path.lineTo(tarPoint[2], tarPoint[3]);
+        path.lineTo(tarPoint[4], tarPoint[5]);
+        path.lineTo(tarPoint[6], tarPoint[7]);
+        path.close();
+        canvas.drawPath(path, paint);
         paint.setColor(Color.BLUE);
         canvas.drawPoint(x, y, paint);
+        canvas.drawPoint(allPoint.get(0)[0],allPoint.get(0)[1],paint);
 
-        //
-        Path path=new Path();
+    }
 
-        RectF rectF = new RectF();
-        path.computeBounds(rectF, true);
-        Region region = new Region();
+    /**
+     * 根据终点坐标，计算偏移坐标
+     * @param aFloat
+     * @param aFloat1
+     * @return
+     */
+    private float[] getTarPoint(Float aFloat, Float aFloat1) {
+        float[] resoult=new float[8];
+        resoult[0]=aFloat;
+        resoult[1]=aFloat1;
 
-        if (region.contains(0, 0)) {
+        resoult[2]=aFloat+listPoint.get(2)[0]-listPoint.get(0)[0];
+        resoult[3]=aFloat1+listPoint.get(2)[1]-listPoint.get(0)[1];
 
-        }
+        resoult[4]=aFloat+pointD[0]-listPoint.get(0)[0];
+        resoult[5]=aFloat1+pointD[1]-listPoint.get(0)[1];
+
+        resoult[6]=aFloat+listPoint.get(1)[0]-listPoint.get(0)[0];
+        resoult[7]=aFloat1+listPoint.get(1)[1]-listPoint.get(0)[1];
+
+        return resoult;
     }
 
     private int indexFloatPoint(ArrayList<Float[]> tempPoint, Float[] f) {
@@ -460,7 +476,6 @@ public class DrawLineView extends View {
     private float getDistance(Float[] xy, float x, float y) {
         return (float) Math.sqrt(Math.pow(xy[0] - x, 2) + Math.pow(xy[1] - y, 2));
     }
-
 
 
 }
