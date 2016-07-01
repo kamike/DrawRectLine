@@ -7,6 +7,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.graphics.Point;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.MotionEvent;
@@ -190,7 +191,6 @@ public class DrawLineView extends View {
             return;
         }
         paint.setColor(Color.RED);
-//        getClickPostionRect(canvas, moveX, moveY, leftY, rightY);
         getClickPostionRect(canvas, moveX, moveY);
     }
 
@@ -314,44 +314,15 @@ public class DrawLineView extends View {
 
     }
 
-    private float getDistance(float x, float y, float x1, float y1) {
-        float cX = x - x1;
-        float cY = y - y1;
 
-        return (float) Math.sqrt(cX * cX + cY * cY);
-    }
 
-    private double getRawAngle(float startX, float startY, float stopX,
-                               float stopY) {
-        double angle = 0;
-        if (stopY > startY) {
-            if (stopX > startX) {
-                angle = Math.atan(Math.abs(stopY - startY)
-                        / Math.abs(stopX - startX));
-
-            } else {
-                angle = 3.1415926 - Math.atan(Math.abs(stopY - startY)
-                        / Math.abs(stopX - startX));
-            }
-
-        } else {
-            if (stopX > startX) {
-                angle = 3.1415926 - Math.atan(Math.abs(stopY - startY)
-                        / Math.abs(stopX - startX));
-
-            } else {
-                angle = Math.atan(Math.abs(stopY - startY)
-                        / Math.abs(stopX - startX));
-            }
-
-        }
-
-        return angle;
-    }
 
 
 
     private void getClickPostionRect(Canvas canvas, final float x, final float y) {
+//        if(!CountTime.isBeyoundTime("test_click",500)){
+//            return;
+//        }
         int size = allXFocusPoint.size();
         ArrayList<Float[]> allPoint = new ArrayList<>();
         paint.setColor(Color.RED);
@@ -384,8 +355,29 @@ public class DrawLineView extends View {
             Log.i("log_test", "拷贝为空");
             return;
         }
-        float[] tarPoint = getTarPoint(allPoint.get(0)[0],allPoint.get(0)[1]);
+        float[] tarPoint = getTarPoint(allPoint.get(0)[0], allPoint.get(0)[1]);
+//        float[] tarPoint = new float[8];
+        Point[] pArray = new Point[4];
+        boolean isRound = false;
+        pArray = setPointArray(tarPoint, pArray);
+        if (!isInPolygon(new Point((int) x, (int) y), pArray)) {
+            for (int i = 1; i < allPoint.size(); i++) {
+                tarPoint = getTarPoint(allPoint.get(i)[0], allPoint.get(i)[1]);
+                pArray = setPointArray(tarPoint, pArray);
+                isRound = isInPolygon(new Point((int) x, (int) y), pArray);
 
+                if (isRound) {
+                    Log.i("test_log", "低多少个点才正确？：" + i);
+                    break;
+                }
+            }
+        }
+        if (!isRound) {
+            Log.i("test_log", "都不正确");
+            tarPoint = getTarPoint(allPoint.get(0)[0], allPoint.get(0)[1]);
+        }
+
+        paint.setColor(Color.RED);
         Path path = new Path();
         path.moveTo(tarPoint[0], tarPoint[1]);
         path.lineTo(tarPoint[2], tarPoint[3]);
@@ -395,42 +387,65 @@ public class DrawLineView extends View {
         canvas.drawPath(path, paint);
         paint.setColor(Color.BLUE);
         canvas.drawPoint(x, y, paint);
-        canvas.drawPoint(allPoint.get(0)[0],allPoint.get(0)[1],paint);
-
     }
+
 
     /**
      * 根据终点坐标，计算偏移坐标
+     *
      * @param aFloat
      * @param aFloat1
      * @return
      */
     private float[] getTarPoint(Float aFloat, Float aFloat1) {
-        float[] resoult=new float[8];
-        resoult[0]=aFloat;
-        resoult[1]=aFloat1;
+        float[] resoult = new float[8];
+        resoult[0] = aFloat;
+        resoult[1] = aFloat1;
 
-        resoult[2]=aFloat+listPoint.get(2)[0]-listPoint.get(0)[0];
-        resoult[3]=aFloat1+listPoint.get(2)[1]-listPoint.get(0)[1];
+        resoult[2] = aFloat + listPoint.get(2)[0] - listPoint.get(0)[0];
+        resoult[3] = aFloat1 + listPoint.get(2)[1] - listPoint.get(0)[1];
 
-        resoult[4]=aFloat+pointD[0]-listPoint.get(0)[0];
-        resoult[5]=aFloat1+pointD[1]-listPoint.get(0)[1];
+        resoult[4] = aFloat + pointD[0] - listPoint.get(0)[0];
+        resoult[5] = aFloat1 + pointD[1] - listPoint.get(0)[1];
 
-        resoult[6]=aFloat+listPoint.get(1)[0]-listPoint.get(0)[0];
-        resoult[7]=aFloat1+listPoint.get(1)[1]-listPoint.get(0)[1];
+        resoult[6] = aFloat + listPoint.get(1)[0] - listPoint.get(0)[0];
+        resoult[7] = aFloat1 + listPoint.get(1)[1] - listPoint.get(0)[1];
 
         return resoult;
     }
 
-    private int indexFloatPoint(ArrayList<Float[]> tempPoint, Float[] f) {
-        for (int i = 0; i < tempPoint.size(); i++) {
-            if (tempPoint.get(i)[0] == f[0] && tempPoint.get(i)[1] == f[1]) {
-                return i;
-            }
+    public boolean isInPolygon(Point point, Point[] points) {
+        int nCross = 0;
+        for (int i = 0; i < 4; i++) {
+            Point p1 = points[i];
+            Point p2 = points[(i + 1) % 4];
+            // 求解 y=p.y 与 p1 p2 的交点
+            // p1p2 与 y=p0.y平行
+            if (p1.y == p2.y)
+                continue;
+            // 交点在p1p2延长线上
+            if (point.y < Math.min(p1.y, p2.y))
+                continue;
+            // 交点在p1p2延长线上
+            if (point.y >= Math.max(p1.y, p2.y))
+                continue;
+            // 求交点的 X 坐标
+            double x = (double) (point.y - p1.y) * (double) (p2.x - p1.x)
+                    / (double) (p2.y - p1.y) + p1.x;
+            // 只统计单边交点
+            if (x > point.x)
+                nCross++;
         }
-        return -1;
+        return (nCross % 2 == 1);
     }
 
+    private Point[] setPointArray(float[] tarPoint, Point[] pArray) {
+        pArray[0] = new Point((int) tarPoint[0], (int) tarPoint[1]);
+        pArray[1] = new Point((int) tarPoint[2], (int) tarPoint[3]);
+        pArray[2] = new Point((int) tarPoint[4], (int) tarPoint[5]);
+        pArray[3] = new Point((int) tarPoint[6], (int) tarPoint[7]);
+        return pArray;
+    }
 
     private float getDistance(Float[] xy, float x, float y) {
         return (float) Math.sqrt(Math.pow(xy[0] - x, 2) + Math.pow(xy[1] - y, 2));
